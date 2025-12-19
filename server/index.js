@@ -1,22 +1,16 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { neon } = require("@neondatabase/serverless");
 const app = express();
 const PORT = 4000;
-
-const client = neon(process.env.DB_URL);
-
+//MIDDLEWARES
+const userRouter = require("./routes");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
+app.use("/", userRouter);
 
-app.get("/api", (req, res) => {
-  res.json({
-    message: "Hello world",
-  });
-});
-
+//SERVER STARTER
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
