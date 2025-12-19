@@ -1,9 +1,7 @@
+require("dotenv").config();
 const { createClient } = require("@supabase/supabase-js");
-
-// You find these in your Supabase Dashboard -> Settings -> API
-const supabaseUrl = "https://your-project-id.supabase.co";
-const supabaseKey = "your-anon-public-key";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 module.exports = supabase;
