@@ -13,10 +13,38 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { UserAuth } from '@/context/authContext';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { PasswordStrength } from './password_strenght';
 
 export function SignupForm({ className, ...props }) {
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signUpNewUser } = UserAuth();
+
+  const navigate = useNavigate();
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { success, data, msg } = await signUpNewUser(email, password);
+      if (success) {
+        navigate('/');
+      }
+      if (!success) throw new Error(msg);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
@@ -27,15 +55,27 @@ export function SignupForm({ className, ...props }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSignup}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="name">Full Name</FieldLabel>
-                <Input id="name" type="text" placeholder="John Doe" required />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  required
+                  onChange={(e) => setName(e.target.value)}
+                />
               </Field>
               <Field>
                 <FieldLabel htmlFor="name">Username</FieldLabel>
-                <Input id="name" type="text" placeholder="JohnX" required />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="JohnX"
+                  required
+                  onChange={(e) => setUsername(e.target.value)}
+                />
               </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -44,21 +84,14 @@ export function SignupForm({ className, ...props }) {
                   type="email"
                   placeholder="m@g.bracu.ac.bd"
                   required
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
+              <PasswordStrength
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
               <Field>
-                <Field className="grid grid-cols-2 gap-4">
-                  <Field>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                    <Input id="password" type="password" required />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="confirm-password">
-                      Confirm Password
-                    </FieldLabel>
-                    <Input id="confirm-password" type="password" required />
-                  </Field>
-                </Field>
                 <FieldDescription>
                   Must be at least 8 characters long.
                 </FieldDescription>
@@ -66,16 +99,29 @@ export function SignupForm({ className, ...props }) {
               <Field>
                 <Button type="submit">Create Account</Button>
                 <FieldDescription className="text-center">
-                  Already have an account? <Link to="/signin">Sign in</Link>
+                  Already have an account?{' '}
+                  <Link
+                    to="/signin"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Sign in
+                  </Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
-        and <a href="#">Privacy Policy</a>.
+      <FieldDescription className="px-6 text-center text-muted-foreground">
+        By clicking continue, you agree to our{' '}
+        <a href="#" className="underline hover:text-primary">
+          Terms of Service
+        </a>{' '}
+        and{' '}
+        <a href="#" className="underline hover:text-primary">
+          Privacy Policy
+        </a>
+        .
       </FieldDescription>
     </div>
   );
