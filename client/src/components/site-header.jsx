@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { InputWithButton } from '@/components/ui/searchForm';
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar';
+import { StatefulButtonDemo } from '@/components/uploadbutton';
 import { GalleryVerticalEnd } from 'lucide-react';
 
+import {CreateThreadDialog} from '@/components/dialog';
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar();
 
@@ -37,7 +39,7 @@ export function SiteHeader() {
           </BreadcrumbList>
         </Breadcrumb> */}
         {/* <SearchForm className="w-full sm:ml-auto sm:w-auto" /> */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2 w-2/3">
           <a href="#" className="flex items-center gap-2 w-full">
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-5" />
@@ -48,7 +50,12 @@ export function SiteHeader() {
             </div>
           </a>
         </div>
-        <InputWithButton className="w-full sm:ml-auto sm:w-auto" />
+        {/* <div className="w-full flex justify-end sm:w-2/5"> */}
+          {/* <StatefulButtonDemo /> */}
+          <CreateThreadDialog />
+          {/* <PopoverDemo />  */}
+        {/* </div> */}
+        <InputWithButton className="w-full sm:ml-auto sm:w-auto md:w-2/3" />
         <ModeToggle />
       </div>
     </header>

@@ -20,12 +20,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PasswordStrength } from './password_strenght';
 
 export function SignupForm({ className, ...props }) {
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const [_name, setName] = useState('');
+  const [_username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [_error, setError] = useState('');
+  const [_loading, setLoading] = useState(false);
   const { signUpNewUser } = UserAuth();
 
   const navigate = useNavigate();
@@ -34,7 +34,11 @@ export function SignupForm({ className, ...props }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const { success, data, msg } = await signUpNewUser(email, password);
+      const {
+        success,
+        data: _data,
+        msg,
+      } = await signUpNewUser(email, password);
       if (success) {
         navigate('/');
       }

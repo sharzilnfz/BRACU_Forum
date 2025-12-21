@@ -8,7 +8,7 @@ import { IconArrowRight, IconSearch } from '@tabler/icons-react';
 import * as React from 'react';
 
 export function InputWithButton(props: TextInputProps) {
-  const theme = useMantineTheme();
+  const _theme = useMantineTheme();
 
   return (
     <TextInput
