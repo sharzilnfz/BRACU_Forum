@@ -20,22 +20,32 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PasswordStrength } from './password_strenght';
 
 export function SignupForm({ className, ...props }) {
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const [_name, setName] = useState('');
+  const [_username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [_error, setError] = useState('');
+  const [_loading, setLoading] = useState(false);
   const { signUpNewUser } = UserAuth();
 
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
-      const { success, data, msg } = await signUpNewUser(email, password);
+      const {
+        success,
+        data: _data,
+        msg,
+      } = await signUpNewUser(email, password, _name, _username);
       if (success) {
+        console.log('User created successfully:', _data);
         navigate('/');
       }
       if (!success) throw new Error(msg);
@@ -68,9 +78,9 @@ export function SignupForm({ className, ...props }) {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="name">Username</FieldLabel>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
                 <Input
-                  id="name"
+                  id="username"
                   type="text"
                   placeholder="JohnX"
                   required
