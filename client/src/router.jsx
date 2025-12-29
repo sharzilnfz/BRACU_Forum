@@ -1,7 +1,6 @@
 import { GalleryVerticalEnd } from 'lucide-react';
 import { createBrowserRouter } from 'react-router-dom';
 import Page from './App/dashboard/Page';
-import Dashboard from './components/dashboard';
 import { LoginForm } from './components/login-form';
 import { ModeToggle } from './components/mode-toggle';
 import { SignupForm } from './components/signup-form';
@@ -52,5 +51,4 @@ export const router = createBrowserRouter([
       </div>
     ),
   },
-  { path: '/dashboard', element: <Dashboard /> },
 ]);
