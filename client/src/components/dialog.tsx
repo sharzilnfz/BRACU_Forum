@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Hash, Loader2, Plus, X } from 'lucide-react';
 
@@ -35,6 +34,8 @@ const categories = [
   'ROBU',
   'BUCC',
   'General',
+  'Faculty Review',
+  'Course Review',
 ];
 
 const suggestedTags = [
@@ -157,7 +158,7 @@ export function CreateThreadDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-150">
         <DialogHeader className={undefined}>
           <DialogTitle className={undefined}>Create New Thread</DialogTitle>
           <DialogDescription className={undefined}>
@@ -208,7 +209,7 @@ export function CreateThreadDialog() {
               placeholder="Share your thoughts..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[150px]"
+              className="min-h-37.5"
             />
           </div>
 
@@ -249,7 +250,7 @@ export function CreateThreadDialog() {
           </div>
 
           {/* Poll Toggle */}
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          {/* <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label className={undefined}>Add a Poll</Label>
               <p className="text-sm text-muted-foreground">
@@ -261,7 +262,7 @@ export function CreateThreadDialog() {
               onCheckedChange={setIsPoll}
               className={undefined}
             />
-          </div>
+          </div> */}
 
           {/* Poll Options */}
           {isPoll && (

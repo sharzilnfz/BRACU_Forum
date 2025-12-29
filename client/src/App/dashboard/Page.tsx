@@ -8,12 +8,13 @@ import { UserAuth } from '@/context/authContext';
 import { supabase } from '@/supabaseClient';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 interface Profile {
   id: string;
   full_name: string;
   username: string;
-  profile_picture?: string;
+  avatar_url?: string;
 }
 
 interface Thread {
@@ -27,20 +28,34 @@ interface Thread {
   comment_count?: number;
   like_count?: number;
   view_count?: number;
+  upvote_count?: number;
+  downvote_count?: number;
   author?: Profile;
 }
 
 export default function Page() {
-  const { userProfile } = UserAuth();
+  const { userProfile, loading } = UserAuth();
+  const navigate = useNavigate(); // Initialize navigation
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Use useCallback so fetchThreads can be a dependency for useEffect
+  // --- 1. PROTECT THE ROUTE ---
+  useEffect(() => {
+    // Determine if we are still loading auth
+    if (loading) return;
+
+    // If no user is logged in after loading, redirect immediately
+    if (!userProfile) {
+      navigate('/signin'); // Change '/signin' to your actual login route
+    }
+  }, [userProfile, loading, navigate]);
+
   const fetchThreads = useCallback(async (isSilent = false) => {
     try {
-      if (!isSilent) setLoading(true);
+      if (!isSilent) setIsFetching(true);
 
-      // 1. Fetch RAW threads (newest first)
       const { data: rawThreads, error: threadsError } = await supabase
         .from('threads')
         .select('*')
@@ -50,25 +65,21 @@ export default function Page() {
 
       const threads = rawThreads || [];
 
-      // 2. Get unique user IDs to fetch profiles for
-      // We filter(Boolean) to ensure we don't try to fetch null IDs
       const userIds = Array.from(
         new Set(threads.map((t) => t.created_by).filter(Boolean))
       );
 
-      // 3. Fetch Profiles manually
       let profilesMap: Record<string, Profile> = {};
 
       if (userIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, username') // Removed profile_picture to avoid schema errors
+          .select('id, full_name, username, avatar_url')
           .in('id', userIds);
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError);
         } else if (profiles) {
-          // Create a lookup map: { "user_uuid": { profile_data } }
           profilesMap = profiles.reduce((acc, profile) => {
             acc[profile.id] = profile;
             return acc;
@@ -76,7 +87,6 @@ export default function Page() {
         }
       }
 
-      // 4. Attach profile to thread
       const joinedThreads = threads.map((thread) => ({
         ...thread,
         author: profilesMap[thread.created_by] || null,
@@ -86,68 +96,113 @@ export default function Page() {
     } catch (error) {
       console.error('Error in fetchThreads:', error);
     } finally {
-      if (!isSilent) setLoading(false);
+      if (!isSilent) setIsFetching(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchThreads();
+    // Only fetch threads if we have a user (optimization)
+    if (userProfile) {
+      fetchThreads();
 
-    // 1. Custom Event Listener (for when you post from the Dialog)
-    const handleLocalUpdate = () => {
-      console.log('Local thread event detected, refreshing...');
-      fetchThreads(true);
-    };
-    window.addEventListener('thread-created', handleLocalUpdate);
+      const handleLocalUpdate = () => {
+        console.log('Local thread event detected, refreshing...');
+        fetchThreads(true);
+      };
+      window.addEventListener('thread-created', handleLocalUpdate);
+      window.addEventListener('thread-updated', handleLocalUpdate);
 
-    // 2. Supabase Realtime Listener (for other people's posts)
-    const channel = supabase
-      .channel('realtime-threads')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'threads' },
-        (payload) => {
-          console.log('Realtime INSERT received:', payload);
-          fetchThreads(true);
-        }
-      )
-      .subscribe();
+      const channel = supabase
+        .channel('realtime-threads')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'threads' },
+          (payload) => {
+            console.log('Realtime INSERT received:', payload);
+            fetchThreads(true);
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'threads' },
+          (payload) => {
+            console.log('Realtime UPDATE received:', payload);
+            fetchThreads(true);
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener('thread-created', handleLocalUpdate);
-    };
-  }, [fetchThreads]);
+      return () => {
+        supabase.removeChannel(channel);
+        window.removeEventListener('thread-created', handleLocalUpdate);
+        window.removeEventListener('thread-updated', handleLocalUpdate);
+      };
+    }
+  }, [fetchThreads, userProfile]); // added userProfile dependency
+
+  if (loading || (!userProfile && loading)) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return null; // Will redirect in useEffect
+  }
+
+  // Filter threads based on search query and selected category
+  const filteredThreads = threads.filter((thread) => {
+    const matchesSearch =
+      !searchQuery ||
+      thread.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      thread.content?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      !selectedCategory || thread.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="[--header-height:calc(--spacing(14))]">
       <SidebarProvider className="flex flex-col">
-        <SiteHeader />
+        <SiteHeader onSearch={setSearchQuery} />
         <div className="flex flex-1">
-          <AppSidebar />
+          <AppSidebar
+            onCategorySelect={setSelectedCategory}
+            selectedCategory={selectedCategory}
+          />
           <SidebarInset className="flex flex-1 flex-col gap-4 p-4">
             <div className="flex-1 rounded-xl">
-              {loading ? (
+              {/* Thread count display */}
+              {(searchQuery || selectedCategory) && (
+                <div className="mb-4 text-sm text-muted-foreground">
+                  Found {filteredThreads.length} thread
+                  {filteredThreads.length !== 1 ? 's' : ''}
+                  {searchQuery && ` matching "${searchQuery}"`}
+                  {selectedCategory && ` in ${selectedCategory}`}
+                </div>
+              )}
+
+              {isFetching ? (
                 <div className="flex h-40 items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : threads.length > 0 ? (
-                threads.map((thread) => {
-                  // --- Display Logic ---
+              ) : filteredThreads.length > 0 ? (
+                filteredThreads.map((thread) => {
                   let authorName = 'BRACU Student';
                   let authorHandle = '@user';
                   let authorAvatar = '';
 
-                  // Case A: Profile found in DB (Success case)
                   if (thread.author && thread.author.full_name) {
                     authorName = thread.author.full_name;
                     authorHandle = thread.author.username
                       ? `@${thread.author.username}`
                       : '@user';
-                    authorAvatar = thread.author.profile_picture;
-                  }
-                  // Case B: Fallback to local context (It's me, but DB might have lagged)
-                  else if (
+                    authorAvatar = thread.author.avatar_url || '';
+                  } else if (
                     userProfile &&
                     thread.created_by === userProfile.id
                   ) {
@@ -156,7 +211,6 @@ export default function Page() {
                     authorHandle = userProfile.username
                       ? `@${userProfile.username}`
                       : '@me';
-                    // We don't override avatar here unless we have it in userProfile
                   }
 
                   return (
@@ -177,13 +231,15 @@ export default function Page() {
                           }
                         ),
                         content: thread.title,
-                        category: thread.category, // PASSING CATEGORY
-                        tags: thread.tags, // PASSING TAGS
+                        category: thread.category,
+                        tags: thread.tags,
                         stats: {
                           replies: thread.comment_count || 0,
                           reposts: 0,
                           likes: thread.like_count || 0,
                           views: thread.view_count || 0,
+                          upvotes: thread.upvote_count || 0,
+                          downvotes: thread.downvote_count || 0,
                         },
                       }}
                     />

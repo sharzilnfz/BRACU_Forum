@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { InputWithButton } from '@/components/ui/searchForm';
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar';
-import { StatefulButtonDemo } from '@/components/uploadbutton';
 import { GalleryVerticalEnd } from 'lucide-react';
 
-import {CreateThreadDialog} from '@/components/dialog';
-export function SiteHeader() {
+import { CreateThreadDialog } from '@/components/dialog';
+export function SiteHeader({ onSearch }) {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -51,11 +50,14 @@ export function SiteHeader() {
           </a>
         </div>
         {/* <div className="w-full flex justify-end sm:w-2/5"> */}
-          {/* <StatefulButtonDemo /> */}
-          <CreateThreadDialog />
-          {/* <PopoverDemo />  */}
+        {/* <StatefulButtonDemo /> */}
+        <CreateThreadDialog />
+        {/* <PopoverDemo />  */}
         {/* </div> */}
-        <InputWithButton className="w-full sm:ml-auto sm:w-auto md:w-2/3" />
+        <InputWithButton
+          className="w-full sm:ml-auto sm:w-auto md:w-2/3"
+          onSearch={onSearch}
+        />
         <ModeToggle />
       </div>
     </header>

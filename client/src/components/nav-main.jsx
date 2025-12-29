@@ -21,8 +21,13 @@ import {
 import { BookOpen, ChevronRight, Flame, Home } from 'lucide-react';
 import { useState } from 'react';
 
-export function NavMain({ items }) {
+export function NavMain({ items, onCategorySelect, selectedCategory }) {
   const [activeItem, setActiveItem] = useState('home');
+
+  const handleHomeClick = () => {
+    setActiveItem('home');
+    onCategorySelect?.(null); // Clear category filter
+  };
 
   return (
     <SidebarGroup>
@@ -34,7 +39,7 @@ export function NavMain({ items }) {
             <Button
               variant={activeItem === 'home' ? 'secondary' : 'ghost'}
               className="w-full justify-start gap-3"
-              onClick={() => setActiveItem('home')}
+              onClick={handleHomeClick}
             >
               <Home className="h-4 w-4" />
               Home
@@ -81,8 +86,17 @@ export function NavMain({ items }) {
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={selectedCategory === subItem.title}
+                          >
+                            <a
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                onCategorySelect?.(subItem.title);
+                              }}
+                            >
                               <span>{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>

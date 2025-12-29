@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export const AuthContextProvider = ({ children }) => {
   const [session, setSession] = useState(undefined);
   const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const signInUser = async (email, password) => {
     try {
@@ -68,35 +69,69 @@ export const AuthContextProvider = ({ children }) => {
     if (!session) return;
 
     // Try fetching from profiles table
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, username')
-      .eq('id', session.user.id)
-      .single();
+    try {
+      // First attempt: fetch all fields
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url, bio, location')
+        .eq('id', session.user.id)
+        .single();
 
-    if (error) {
-      console.error(
-        'Error fetching profile from DB, using metadata fallback:',
-        error
+      if (error) throw error;
+
+      if (data) {
+        setUserProfile({
+          id: data.id,
+          email: session.user.email,
+          name: data.full_name,
+          username: data.username,
+          avatar_url: data.avatar_url,
+          bio: data.bio,
+          location: data.location,
+          created_at: session.user.created_at,
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn(
+        'Extended profile fetch failed, trying basic fields. Run SQL migration.',
+        err
       );
+      // Fallback: fetch only basic fields (compatibility mode)
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .eq('id', session.user.id)
+        .single();
+
+      if (data) {
+        setUserProfile({
+          id: data.id,
+          email: session.user.email,
+          name: data.full_name,
+          username: data.username,
+          avatar_url: '', // Default or from metadata if available
+          bio: '',
+          location: '',
+          created_at: session.user.created_at,
+        });
+        return;
+      }
     }
 
-    if (data) {
-      setUserProfile({
-        id: data.id,
-        email: session.user.email,
-        name: data.full_name,
-        username: data.username,
-      });
-    } else if (session.user.user_metadata) {
+    if (session.user.user_metadata) {
       // Fallback to metadata if DB record is missing (common with RLS issues)
       console.log('Using user_metadata fallback');
-      const { full_name, username } = session.user.user_metadata;
+      const { full_name, username, avatar_url } = session.user.user_metadata;
       setUserProfile({
         id: session.user.id,
         email: session.user.email,
         name: full_name,
         username: username,
+        avatar_url: avatar_url,
+        bio: '',
+        location: '',
+        created_at: session.user.created_at,
       });
     }
   };
@@ -104,8 +139,12 @@ export const AuthContextProvider = ({ children }) => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchUserProfile();
-      else setUserProfile(null);
+      if (session) {
+        fetchUserProfile().then(() => setLoading(false));
+      } else {
+        setUserProfile(null);
+        setLoading(false);
+      }
     });
 
     supabase.auth.onAuthStateChange((_, session) => {
@@ -125,6 +164,7 @@ export const AuthContextProvider = ({ children }) => {
         signOutUser,
         userProfile,
         fetchUserProfile,
+        loading,
       }}
     >
       {children}

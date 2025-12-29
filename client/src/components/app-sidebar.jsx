@@ -34,15 +34,15 @@ const staticData = {
       isActive: true,
       items: [
         {
-          title: 'CSE',
+          title: 'CSE Department',
           url: '#',
         },
         {
-          title: 'EEE',
+          title: 'EEE Department',
           url: '#',
         },
         {
-          title: 'BBA',
+          title: 'BBA Department',
           url: '#',
         },
         {
@@ -144,15 +144,19 @@ const staticData = {
   ],
 };
 
-export function AppSidebar({ ...props }) {
+export function AppSidebar({ onCategorySelect, selectedCategory, ...props }) {
   const { userProfile } = UserAuth();
 
   const data = {
     ...staticData,
     user: {
-      name: userProfile?.username || 'Guest',
+      name: userProfile?.name || userProfile?.username || 'Guest',
       email: userProfile?.email || 'guest@example.com',
-      avatar: '/avatars/shadcn.jpg',
+      avatar: userProfile?.avatar_url || '/avatars/shadcn.jpg',
+      username: userProfile?.username || 'guest',
+      bio: userProfile?.bio || '',
+      location: userProfile?.location || '',
+      created_at: userProfile?.created_at,
     },
   };
 
@@ -171,7 +175,7 @@ export function AppSidebar({ ...props }) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">BRACU Forum</span>
-                  <span className="truncate text-xs">Enterprise</span>
+                  <span className="truncate text-xs">Republic of Badda</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -179,7 +183,11 @@ export function AppSidebar({ ...props }) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain
+          items={data.navMain}
+          onCategorySelect={onCategorySelect}
+          selectedCategory={selectedCategory}
+        />
         {/* <NavProjects projects={data.projects} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
