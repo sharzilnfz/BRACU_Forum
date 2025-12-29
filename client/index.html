@@ -1,10 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>forum</title>
+    <title>BRACU Forum</title>
+
+    <!-- Prevent flash of unstyled content (FOUC) -->
+    <script>
+      // Apply theme before page renders to prevent flash
+      (function () {
+        const storageKey = 'vite-ui-theme';
+        const theme = localStorage.getItem(storageKey) || 'dark';
+        const root = document.documentElement;
+
+        // Determine effective theme
+        let effectiveTheme = theme;
+        if (theme === 'system') {
+          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)')
+            .matches
+            ? 'dark'
+            : 'light';
+        }
+
+        // Apply theme immediately
+        root.classList.add(effectiveTheme);
+        root.setAttribute('data-theme', effectiveTheme);
+        root.style.colorScheme = effectiveTheme;
+
+        // Add no-transition class to prevent transitions on load
+        root.classList.add('no-transition');
+
+        // Remove no-transition class after a brief delay
+        window.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            root.classList.remove('no-transition');
+          }, 100);
+        });
+      })();
+    </script>
+
+    <style>
+      /* Prevent flash with loading screen */
+      #root:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: oklch(0.145 0 0);
+      }
+
+      #root:empty::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        border: 3px solid oklch(0.269 0 0);
+        border-top-color: oklch(0.922 0 0);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      html.light #root:empty {
+        background: oklch(1 0 0);
+      }
+
+      html.light #root:empty::after {
+        border-color: oklch(0.97 0 0);
+        border-top-color: oklch(0.205 0 0);
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

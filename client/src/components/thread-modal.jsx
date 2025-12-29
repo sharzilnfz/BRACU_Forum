@@ -10,7 +10,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { UserAuth } from '@/context/authContext';
 import { supabase } from '@/supabaseClient';
-import { MessageCircle, MoreHorizontal, Send, Share2 } from 'lucide-react';
+import { MessageCircle, Send, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 function CommentItem({ comment }) {
@@ -233,13 +233,13 @@ export function ThreadModal({ open, onOpenChange, post }) {
                 </div>
               </div>
 
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground"
               >
                 <MoreHorizontal size={18} />
-              </Button>
+              </Button> */}
             </div>
 
             {/* Mobile Category Badge */}
@@ -257,7 +257,7 @@ export function ThreadModal({ open, onOpenChange, post }) {
                 {post.content}
               </h2>
               {post.fullContent && (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground sm:text-base">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">
                   {post.fullContent}
                 </p>
               )}
@@ -270,9 +270,9 @@ export function ThreadModal({ open, onOpenChange, post }) {
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="cursor-pointer font-normal text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
+                    className="cursor-pointer font-normal hover:bg-secondary/80"
                   >
-                    {tag}
+                    {tag.replace(/^#+/, '#')}
                   </Badge>
                 ))}
               </div>

@@ -35,7 +35,7 @@ export function InputWithButton({ onSearch, ...props }: InputWithButtonProps) {
           size={32}
           radius="xl"
           variant="transparent"
-          className="bg-black hover:bg-black/80 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black flex items-center justify-center transition-colors"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors"
         >
           <IconArrowRight size={18} stroke={1.5} />
         </ActionIcon>

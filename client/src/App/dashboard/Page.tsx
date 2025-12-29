@@ -143,7 +143,10 @@ export default function Page() {
   if (loading || (!userProfile && loading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -193,14 +196,14 @@ export default function Page() {
               ) : filteredThreads.length > 0 ? (
                 filteredThreads.map((thread) => {
                   let authorName = 'BRACU Student';
-                  let authorHandle = '@user';
+                  let authorHandle = 'user';
                   let authorAvatar = '';
 
                   if (thread.author && thread.author.full_name) {
                     authorName = thread.author.full_name;
                     authorHandle = thread.author.username
-                      ? `@${thread.author.username}`
-                      : '@user';
+                      ? thread.author.username
+                      : 'user';
                     authorAvatar = thread.author.avatar_url || '';
                   } else if (
                     userProfile &&
@@ -209,8 +212,8 @@ export default function Page() {
                     authorName =
                       userProfile.name || userProfile.full_name || 'Me';
                     authorHandle = userProfile.username
-                      ? `@${userProfile.username}`
-                      : '@me';
+                      ? userProfile.username
+                      : 'me';
                   }
 
                   return (

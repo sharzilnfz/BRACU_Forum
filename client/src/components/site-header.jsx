@@ -15,7 +15,7 @@ export function SiteHeader({ onSearch }) {
     <header className="bg-background sticky top-0 z-50 flex w-full items-center border-b">
       <div className="flex h-(--header-height) w-full items-center gap-2 px-4">
         <Button
-          className="h-8 w-8"
+          className="h-8 w-8 text-foreground"
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
@@ -43,9 +43,11 @@ export function SiteHeader({ onSearch }) {
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-5" />
             </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
+            <div className="grid flex-1 text-left text-sm leading-tight text-foreground">
               <span className="truncate font-medium">BRACU Forum</span>
-              <span className="truncate text-xs">Enterprise</span>
+              <span className="truncate text-xs text-muted-foreground">
+                Republic of Badda
+              </span>
             </div>
           </a>
         </div>

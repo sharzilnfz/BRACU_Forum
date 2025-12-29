@@ -212,7 +212,7 @@ export const ThreadCard = ({ post }) => {
                     key={index}
                     className="text-blue-500 hover:underline text-sm cursor-pointer"
                   >
-                    {tag}
+                    {tag.replace(/^#+/, '#')}
                   </span>
                 ))}
               </div>

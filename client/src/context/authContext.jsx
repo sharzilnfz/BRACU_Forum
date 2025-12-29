@@ -62,19 +62,25 @@ export const AuthContextProvider = ({ children }) => {
     return { success: true };
   };
 
-  const fetchUserProfile = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
+  const fetchUserProfile = async (currentSession = session) => {
+    // If no session is passed and no state session, check supabase
+    let activeSession = currentSession;
+    if (!activeSession) {
+      const { data } = await supabase.auth.getSession();
+      activeSession = data.session;
+    }
 
-    // Try fetching from profiles table
+    if (!activeSession) {
+      setUserProfile(null);
+      return;
+    }
+
     try {
       // First attempt: fetch all fields
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, username, avatar_url, bio, location')
-        .eq('id', session.user.id)
+        .eq('id', activeSession.user.id)
         .single();
 
       if (error) throw error;
@@ -82,76 +88,114 @@ export const AuthContextProvider = ({ children }) => {
       if (data) {
         setUserProfile({
           id: data.id,
-          email: session.user.email,
+          email: activeSession.user.email,
           name: data.full_name,
           username: data.username,
           avatar_url: data.avatar_url,
           bio: data.bio,
           location: data.location,
-          created_at: session.user.created_at,
+          created_at: activeSession.user.created_at,
         });
         return;
       }
     } catch (err) {
-      console.warn(
-        'Extended profile fetch failed, trying basic fields. Run SQL migration.',
-        err
-      );
-      // Fallback: fetch only basic fields (compatibility mode)
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, username')
-        .eq('id', session.user.id)
-        .single();
+      console.warn('Extended profile fetch failed, trying basic fields.', err);
+      // Fallback logic remains same...
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .eq('id', activeSession.user.id)
+          .single();
 
-      if (data) {
-        setUserProfile({
-          id: data.id,
-          email: session.user.email,
-          name: data.full_name,
-          username: data.username,
-          avatar_url: '', // Default or from metadata if available
-          bio: '',
-          location: '',
-          created_at: session.user.created_at,
-        });
-        return;
+        if (data) {
+          setUserProfile({
+            id: data.id,
+            email: activeSession.user.email,
+            name: data.full_name,
+            username: data.username,
+            avatar_url: '',
+            bio: '',
+            location: '',
+            created_at: activeSession.user.created_at,
+          });
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback profile fetch failed', fallbackErr);
       }
     }
 
-    if (session.user.user_metadata) {
-      // Fallback to metadata if DB record is missing (common with RLS issues)
-      console.log('Using user_metadata fallback');
-      const { full_name, username, avatar_url } = session.user.user_metadata;
+    // Final fallback to metadata
+    if (activeSession.user.user_metadata) {
+      const { full_name, username, avatar_url } =
+        activeSession.user.user_metadata;
       setUserProfile({
-        id: session.user.id,
-        email: session.user.email,
+        id: activeSession.user.id,
+        email: activeSession.user.email,
         name: full_name,
         username: username,
         avatar_url: avatar_url,
         bio: '',
         location: '',
-        created_at: session.user.created_at,
+        created_at: activeSession.user.created_at,
       });
     }
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile().then(() => setLoading(false));
-      } else {
-        setUserProfile(null);
+    let mounted = true;
+
+    // Initial session check
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session: initialSession },
+        } = await supabase.auth.getSession();
+
+        if (mounted) {
+          setSession(initialSession);
+          if (initialSession) {
+            await fetchUserProfile(initialSession);
+          } else {
+            setUserProfile(null);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (mounted) {
+        setSession(newSession);
+
+        if (newSession) {
+          // Verify if profile needs update (e.g. user just logged in)
+          if (!userProfile || userProfile.id !== newSession.user.id) {
+            // Don't set loading true here to prevent full screen flash,
+            // but could use a 'revalidating' state if needed.
+            await fetchUserProfile(newSession);
+          }
+        } else {
+          setUserProfile(null);
+        }
+
         setLoading(false);
       }
     });
 
-    supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      if (session) fetchUserProfile();
-      else setUserProfile(null);
-    });
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   return (
