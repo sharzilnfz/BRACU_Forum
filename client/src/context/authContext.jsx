@@ -61,22 +61,24 @@ export const AuthContextProvider = ({ children }) => {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
-        // If the session is missing, we should still clear local state
-        if (error.message.includes('Auth session missing')) {
-          setSession(null);
-          setUserProfile(null);
-          // Forcefully clear local storage if Supabase fails
-          localStorage.removeItem(
-            'sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token'
-          );
-        }
       }
     } catch (error) {
       console.error('Unexpected error signing out:', error);
     } finally {
-      // Always clear local state to ensure UI updates
+      // Clear local state
       setSession(null);
       setUserProfile(null);
+
+      // Forcefully clear local storage to ensure no persistent session
+      // Extract project ID from URL: https://<project-id>.supabase.co
+      const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (projectUrl) {
+        // Handle potentially different URL formats safely
+        const tempUrl = projectUrl.replace(/^(https?:\/\/)/, '');
+        const projectId = tempUrl.split('.')[0];
+        const storageKey = `sb-${projectId}-auth-token`;
+        localStorage.removeItem(storageKey);
+      }
     }
     return { success: true };
   };
