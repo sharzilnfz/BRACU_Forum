@@ -32,14 +32,20 @@ export function SignupForm({ className, ...props }) {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
       const {
         success,
         data: _data,
         msg,
-      } = await signUpNewUser(email, password);
+      } = await signUpNewUser(email, password, _name, _username);
       if (success) {
+        console.log('User created successfully:', _data);
         navigate('/');
       }
       if (!success) throw new Error(msg);
@@ -72,9 +78,9 @@ export function SignupForm({ className, ...props }) {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="name">Username</FieldLabel>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
                 <Input
-                  id="name"
+                  id="username"
                   type="text"
                   placeholder="JohnX"
                   required

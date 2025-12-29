@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   ArrowBigDown,
   ArrowBigUp,
@@ -37,6 +38,11 @@ export const ThreadCard = ({ post }) => {
               <span className="text-muted-foreground text-[15px] hover:underline cursor-pointer">
                 {post.date}
               </span>
+              {post.category && (
+                <Badge variant="secondary" className="ml-2 text-xs font-normal">
+                  {post.category}
+                </Badge>
+              )}
             </div>
             <button className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
               <MoreHorizontal size={20} />
@@ -47,6 +53,20 @@ export const ThreadCard = ({ post }) => {
           <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
             {post.content}
           </div>
+
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {post.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="text-blue-500 hover:underline text-sm cursor-pointer"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Footer / Actions */}
           <div className="mt-2 flex items-center justify-between pr-12">

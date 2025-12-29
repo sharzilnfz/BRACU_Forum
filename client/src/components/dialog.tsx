@@ -1,6 +1,8 @@
 'use client';
 
-import React from 'react';
+import { UserAuth } from '@/context/authContext';
+import React, { useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,8 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Hash, Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { Hash, Loader2, Plus, X } from 'lucide-react';
 
 const categories = [
   'CSE Department',
@@ -47,6 +48,7 @@ const suggestedTags = [
 
 export function CreateThreadDialog() {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
@@ -54,6 +56,19 @@ export function CreateThreadDialog() {
   const [tagInput, setTagInput] = useState('');
   const [isPoll, setIsPoll] = useState(false);
   const [pollOptions, setPollOptions] = useState(['', '']);
+
+  const { userProfile } = UserAuth();
+
+  // Helper to reset form
+  const resetForm = () => {
+    setTitle('');
+    setContent('');
+    setCategory('');
+    setTags([]);
+    setTagInput('');
+    setIsPoll(false);
+    setPollOptions(['', '']);
+  };
 
   const addTag = (tag: string) => {
     const formattedTag = tag.startsWith('#') ? tag : `#${tag}`;
@@ -92,36 +107,64 @@ export function CreateThreadDialog() {
     }
   };
 
-  const handleSubmit = () => {
-    // Handle thread creation
-    console.log({ title, content, category, tags, isPoll, pollOptions });
-    setOpen(false);
-    // Reset form
-    setTitle('');
-    setContent('');
-    setCategory('');
-    setTags([]);
-    setIsPoll(false);
-    setPollOptions(['', '']);
+  const handleSubmit = async () => {
+    if (!userProfile) {
+      alert('Please log in to create a thread');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('threads').insert({
+        title: title.trim(),
+        content: content.trim(),
+        category: category,
+        tags: tags,
+        is_poll: isPoll, // FIXED: Snake case
+        // poll_options: isPoll
+        //   ? pollOptions.filter((opt) => opt.trim() !== '')
+        //   : null,
+        created_by: userProfile.id, // FIXED: Matches your table REFERENCES auth.users(id)
+      });
+
+      if (error) throw error;
+
+      // Reset and Close
+      resetForm();
+      setOpen(false);
+      window.dispatchEvent(new Event('thread-created'));
+      console.log('Thread created successfully!');
+    } catch (error) {
+      console.error('Error creating thread:', error.message);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(val) => {
+        setOpen(val);
+        if (!val) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Thread</span>
-          </Button>
-        </div>
+        <Button size="sm" className="gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">New Thread</span>
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-150">
+
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader className={undefined}>
           <DialogTitle className={undefined}>Create New Thread</DialogTitle>
           <DialogDescription className={undefined}>
             Start a discussion with the BRACU community
           </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-4 py-4">
           {/* Title */}
           <div className="space-y-2">
@@ -162,17 +205,17 @@ export function CreateThreadDialog() {
             </Label>
             <Textarea
               id="content"
-              placeholder="Share your thoughts, questions, or ideas..."
+              placeholder="Share your thoughts..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-37.5"
+              className="min-h-[150px]"
             />
           </div>
 
           {/* Tags */}
           <div className="space-y-2">
             <Label className={undefined}>Tags (max 5)</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               {tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="gap-1">
                   {tag}
@@ -203,37 +246,26 @@ export function CreateThreadDialog() {
                 Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {suggestedTags
-                .filter((tag) => !tags.includes(tag))
-                .map((tag) => (
-                  <Button
-                    key={tag}
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-xs bg-transparent"
-                    onClick={() => addTag(tag)}
-                  >
-                    {tag}
-                  </Button>
-                ))}
-            </div>
           </div>
 
           {/* Poll Toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label className={undefined}>Add a Poll</Label>
               <p className="text-sm text-muted-foreground">
-                Let the community vote on options
+                Let the community vote
               </p>
             </div>
-            <Switch checked={isPoll} onCheckedChange={setIsPoll} className={undefined} />
+            <Switch
+              checked={isPoll}
+              onCheckedChange={setIsPoll}
+              className={undefined}
+            />
           </div>
 
           {/* Poll Options */}
           {isPoll && (
-            <div className="space-y-3 rounded-lg border border-border p-4">
+            <div className="space-y-3 rounded-lg border p-4">
               <Label className={undefined}>Poll Options</Label>
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex gap-2">
@@ -263,7 +295,7 @@ export function CreateThreadDialog() {
                   variant="outline"
                   size="sm"
                   onClick={addPollOption}
-                  className="w-full bg-transparent"
+                  className="w-full"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Option
@@ -278,15 +310,17 @@ export function CreateThreadDialog() {
           <Button
             variant="outline"
             onClick={() => setOpen(false)}
+            disabled={loading}
             className={undefined}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!title.trim() || !category}
+            disabled={!title.trim() || !category || loading}
             className={undefined}
           >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Post Thread
           </Button>
         </div>

@@ -22,14 +22,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { UserAuth } from '@/context/authContext';
 import { GalleryVerticalEnd } from 'lucide-react';
 
-const data = {
-  user: {
-    name: 'Sharzil',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
+const staticData = {
   navMain: [
     {
       title: 'Departments',
@@ -149,6 +145,17 @@ const data = {
 };
 
 export function AppSidebar({ ...props }) {
+  const { userProfile } = UserAuth();
+
+  const data = {
+    ...staticData,
+    user: {
+      name: userProfile?.username || 'Guest',
+      email: userProfile?.email || 'guest@example.com',
+      avatar: '/avatars/shadcn.jpg',
+    },
+  };
+
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"

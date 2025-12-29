@@ -1,0 +1,96 @@
+-- 1. Users and Roles
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    bio TEXT,
+    profile_picture_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE roles (
+    role_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL -- e.g. 'admin', 'moderator'
+);
+
+CREATE TABLE user_roles (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    role_id INTEGER REFERENCES roles(role_id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, role_id) -- Composite Key
+);
+
+-- 2. Core Content (Categories, Threads, Comments)
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    parent_category_id INTEGER REFERENCES categories(category_id) -- Self-referencing
+);
+
+CREATE TABLE threads (
+    thread_id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES categories(category_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE comments (
+    comment_id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    thread_id INTEGER REFERENCES threads(thread_id) ON DELETE CASCADE,
+    parent_comment_id INTEGER REFERENCES comments(comment_id), -- Nested replies
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Voting System (Many-to-Many with Constraints)
+CREATE TABLE thread_votes (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    thread_id INTEGER REFERENCES threads(thread_id) ON DELETE CASCADE,
+    value SMALLINT CHECK (value IN (1, -1)), -- Only allow 1 or -1
+    PRIMARY KEY (user_id, thread_id) -- User can vote only once per thread
+);
+
+CREATE TABLE comment_votes (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(comment_id) ON DELETE CASCADE,
+    value SMALLINT CHECK (value IN (1, -1)),
+    PRIMARY KEY (user_id, comment_id)
+);
+
+-- 4. Tagging System
+CREATE TABLE tags (
+    tag_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE thread_tags (
+    thread_id INTEGER REFERENCES threads(thread_id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(tag_id) ON DELETE CASCADE,
+    PRIMARY KEY (thread_id, tag_id)
+);
+
+-- 5. Polling System
+CREATE TABLE polls (
+    poll_id SERIAL PRIMARY KEY,
+    thread_id INTEGER UNIQUE REFERENCES threads(thread_id) ON DELETE CASCADE, -- One poll per thread
+    question TEXT NOT NULL
+);
+
+CREATE TABLE poll_options (
+    option_id SERIAL PRIMARY KEY,
+    poll_id INTEGER REFERENCES polls(poll_id) ON DELETE CASCADE,
+    text VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE poll_votes (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    poll_id INTEGER REFERENCES polls(poll_id) ON DELETE CASCADE,
+    option_id INTEGER REFERENCES poll_options(option_id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, poll_id) -- User can vote only once per poll
+);
