@@ -57,8 +57,27 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   const signOutUser = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        // If the session is missing, we should still clear local state
+        if (error.message.includes('Auth session missing')) {
+          setSession(null);
+          setUserProfile(null);
+          // Forcefully clear local storage if Supabase fails
+          localStorage.removeItem(
+            'sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token'
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Unexpected error signing out:', error);
+    } finally {
+      // Always clear local state to ensure UI updates
+      setSession(null);
+      setUserProfile(null);
+    }
     return { success: true };
   };
 

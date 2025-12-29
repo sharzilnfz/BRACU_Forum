@@ -150,6 +150,9 @@ export const ThreadCard = ({ post }) => {
     setIsModalOpen(true);
   };
 
+  // Debug log to verify post data
+  console.log('ThreadCard post:', post);
+
   // Calculate net score
   const netScore = upvoteCount - downvoteCount;
 
@@ -200,8 +203,15 @@ export const ThreadCard = ({ post }) => {
             </div>
 
             {/* Body */}
-            <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
-              {post.content}
+            <div>
+              <h3 className="mb-1 text-base font-bold leading-snug">
+                {post.content}
+              </h3>
+              {post.fullContent && (
+                <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-muted-foreground">
+                  {post.fullContent}
+                </div>
+              )}
             </div>
 
             {/* Tags */}

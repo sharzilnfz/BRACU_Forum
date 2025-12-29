@@ -234,6 +234,7 @@ export default function Page() {
                           }
                         ),
                         content: thread.title,
+                        fullContent: thread.content,
                         category: thread.category,
                         tags: thread.tags,
                         stats: {
